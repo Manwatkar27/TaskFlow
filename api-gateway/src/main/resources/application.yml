@@ -38,6 +38,7 @@ spring:
         cors-configurations:
           "[/**]":
             allowedOrigins:
+              - "https://task-flow-git-main-aman-manwatkars-projects.vercel.app"
               - "https://task-flow-8deiegosl-aman-manwatkars-projects.vercel.app"
               - "http://localhost:5173"
             allowedMethods:
@@ -58,7 +59,6 @@ spring:
     sampler:
       probability: 1.0
 
-
 eureka:
   instance:
     prefer-ip-address: true
@@ -68,7 +68,6 @@ eureka:
     register-with-eureka: true
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8085/eureka}
-
 
 jwt:
   secret: ${JWT_SECRET:local_jwt_secret_123}

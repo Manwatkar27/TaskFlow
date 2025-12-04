@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { LogOut, Plus, CheckCircle, Clock, User, Lock } from 'lucide-react';
 import './App.css'; 
 
-const API_URL = 'http://localhost:8090'; 
+const API_URL = 'https://api-gateway-m72v.onrender.com'; 
 
 // 1. Login / Register Component
 const Auth = ({ setIsAuthenticated }) => {

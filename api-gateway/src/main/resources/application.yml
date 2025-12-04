@@ -1,5 +1,4 @@
 server:
-  # Render dynamic port, local fallback = 8090
   port: ${PORT:8090}
 
 spring:
@@ -14,32 +13,29 @@ spring:
           lower-case-service-id: true
 
       routes:
-        # USER SERVICE
         - id: USER-SERVICE
           uri: lb://USER-SERVICE
           predicates:
             - Path=/auth/**, /users/**, /api/users/**
 
-        # TASK SERVICE
         - id: TASK-SERVICE
           uri: lb://TASK-SERVICE
           predicates:
             - Path=/api/tasks/**
 
-        # SUBMISSION SERVICE
         - id: SUBMISSION-SERVICE
           uri: lb://SUBMISSION-SERVICE
           predicates:
             - Path=/api/submissions/**
 
-      # GLOBAL CORS
       globalcors:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
           "[/**]":
             allowedOrigins:
+              - "https://task-flow-pied-five.vercel.app"
               - "https://task-flow-git-main-aman-manwatkars-projects.vercel.app"
-              - "https://task-flow-8deiegosl-aman-manwatkars-projects.vercel.app"
+              - "https://task-flow-1yzt1xl4u-aman-manwatkars-projects.vercel.app"
               - "http://localhost:5173"
             allowedMethods:
               - GET
@@ -51,7 +47,6 @@ spring:
               - "*"
             allowCredentials: true
 
-  # ZIPKIN DISABLED
   zipkin:
     enabled: false
 

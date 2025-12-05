@@ -2,49 +2,66 @@ package in.aman.tasks.taskSecurityConfig;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import javax.crypto.SecretKey;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
+@Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String jwt = request.getHeader(JwtConstant.JWT_HEADER);
-        System.out.println("JWT Token in JwtTokenValidator: " + jwt);
-        if (jwt != null && jwt.startsWith("Bearer ")) {
-            jwt = jwt.substring(7);
-            
-            System.out.println("JWT Token in JwtTokenValidator: " + jwt);
-            try {
-                SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
-                @SuppressWarnings("deprecation")
-                Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
-                System.out.print(claims);
+    @Value("${jwt.secret}")
+    private String secret;
 
-                String email = String.valueOf(claims.get("email"));
-                System.out.print(email);
-                String authorities = String.valueOf(claims.get("authorities"));
-                List<GrantedAuthority> auth = AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
-                Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, auth);
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String jwtHeader = request.getHeader(JwtConstant.JWT_HEADER);
+
+        System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
+        System.out.println("JWT SECRET IN VALIDATOR = " + secret);
+
+        if (jwtHeader != null && jwtHeader.startsWith("Bearer ")) {
+
+            String jwt = jwtHeader.substring(7);
+
+            try {
+                Claims claims = Jwts.parser()
+                        .setSigningKey(secret)
+                        .parseClaimsJws(jwt)
+                        .getBody();
+
+                String email = claims.get("email", String.class);
+                String authorities = claims.get("authorities", String.class);
+
+                List<GrantedAuthority> auth =
+                        AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
+
+                Authentication authentication =
+                        new UsernamePasswordAuthenticationToken(email, null, auth);
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (Exception e) {
-                throw new BadCredentialsException("Invalid token", e);
+                throw new BadCredentialsException("Invalid JWT token", e);
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }

@@ -21,6 +21,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -35,32 +37,25 @@ public class AuthController {
     private CustomerServiceImplementation customUserDetails;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private JwtProvider jwtProvider;
 
-    // SIGNUP
     @HystrixCommand(fallbackMethod = "createUserFallback")
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user) throws UserException {
 
-        String email = user.getEmail();
-
-        if (userRepository.findByEmail(email) != null) {
+        if (userRepository.findByEmail(user.getEmail()) != null) {
             throw new UserException("Email already exists");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User savedUser = userRepository.save(user);
+
+        userRepository.save(user);
 
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(
-                        savedUser.getEmail(),
-                        savedUser.getPassword()
-                );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        user.getEmail(),
+                        null,
+                        new ArrayList<>());
 
         String token = jwtProvider.generateToken(authentication);
 
@@ -72,39 +67,36 @@ public class AuthController {
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
     }
 
-    public ResponseEntity<AuthResponse> createUserFallback(User user, Throwable throwable) {
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setMessage("User registration failed due to a temporary issue.");
-        authResponse.setStatus(false);
-        return new ResponseEntity<>(authResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<AuthResponse> createUserFallback(User user, Throwable t) {
+        AuthResponse ar = new AuthResponse();
+        ar.setMessage("Signup failed: " + t.getMessage());
+        ar.setStatus(false);
+        return new ResponseEntity<>(ar, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // SIGNIN
+
     @HystrixCommand(fallbackMethod = "signinFallback")
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> signin(@RequestBody LoginRequest loginRequest) {
 
-        String username = loginRequest.getemail();
-        String password = loginRequest.getPassword();
-
-        Authentication authentication = authenticate(username, password);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        Authentication authentication =
+                authenticate(loginRequest.getemail(), loginRequest.getPassword());
 
         String token = jwtProvider.generateToken(authentication);
 
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setMessage("Login success");
-        authResponse.setJwt(token);
-        authResponse.setStatus(true);
+        AuthResponse ar = new AuthResponse();
+        ar.setJwt(token);
+        ar.setMessage("Login success");
+        ar.setStatus(true);
 
-        return new ResponseEntity<>(authResponse, HttpStatus.OK);
+        return new ResponseEntity<>(ar, HttpStatus.OK);
     }
 
-    public ResponseEntity<AuthResponse> signinFallback(LoginRequest loginRequest, Throwable throwable) {
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setMessage("Login failed due to a temporary issue.");
-        authResponse.setStatus(false);
-        return new ResponseEntity<>(authResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<AuthResponse> signinFallback(LoginRequest req, Throwable t) {
+        AuthResponse ar = new AuthResponse();
+        ar.setMessage("Signin failed: " + t.getMessage());
+        ar.setStatus(false);
+        return new ResponseEntity<>(ar, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private Authentication authenticate(String username, String password) {
@@ -113,7 +105,7 @@ public class AuthController {
                 customUserDetails.loadUserByUsername(username);
 
         if (userDetails == null) {
-            throw new BadCredentialsException("Invalid username");
+            throw new BadCredentialsException("User not found");
         }
 
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
@@ -123,7 +115,6 @@ public class AuthController {
         return new UsernamePasswordAuthenticationToken(
                 userDetails,
                 null,
-                userDetails.getAuthorities()
-        );
+                userDetails.getAuthorities());
     }
 }

@@ -16,7 +16,6 @@ public class UserServiceImplementation implements UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // JWT provider injected
     @Autowired
     private JwtProvider jwtProvider;
 

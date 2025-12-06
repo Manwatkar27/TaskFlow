@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import jwtDecode from "jwt-decode"; // ✅ FIX
+import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from 'react-toastify';
 import { LogOut, Plus, CheckCircle, Clock, User, Lock } from 'lucide-react';
 import './App.css'; 

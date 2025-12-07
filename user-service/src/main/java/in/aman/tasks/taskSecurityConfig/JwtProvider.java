@@ -1,18 +1,17 @@
 package in.aman.tasks.taskSecurityConfig;
 
+import in.aman.tasks.usermodel.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtProvider {
@@ -20,18 +19,16 @@ public class JwtProvider {
     @Value("${jwt.secret}")
     private String secret;
 
-    public String generateToken(Authentication auth) {
+    public String generateToken(Authentication authentication) {
 
-        String email = auth.getName();
+        String email = authentication.getName();
+        String role = "ROLE_USER";          //  default safety
 
-        // ✅ ALWAYS WORKING ROLE FETCH
-        String role = auth.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+        //  FORCE ROLE FROM DB ENTITY — THIS IS THE FIX
+        Object principal = authentication.getPrincipal();
 
-        if (role.isBlank()) {
-            role = "ROLE_USER";
+        if (principal instanceof User user) {
+            role = user.getRole();          // ✅ returns ROLE_ADMIN for admin logins
         }
 
         Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -42,12 +39,13 @@ public class JwtProvider {
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000))
                 .claim("email", email)
                 .claim("role", role)
-                .claim("authorities", role)
+                .claim("authorities", role)   // ✅ REQUIRED by your validator
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
-        // ✅ FINAL DEBUG LOGS
+        //  CONFIRMATION LOGS
         System.out.println("JWT EMAIL = " + email);
+        System.out.println("JWT ROLE USED = " + role);
         System.out.println("JWT AUTHORITIES USED = " + role);
         System.out.println("JWT SECRET USED = " + secret);
         System.out.println("Generated Token = " + jwt);

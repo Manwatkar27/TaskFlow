@@ -214,11 +214,18 @@ const TaskCard = ({ task, role }) => {
 const Dashboard = ({ setIsAuthenticated }) => {
 
   const [tasks, setTasks] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    deadline: ""
+  });
+
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
-
   const role = decoded?.role || "ROLE_USER";
 
   const fetchTasks = async () => {
@@ -226,9 +233,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
       const { data } = await axios.get(`${API_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       setTasks(data);
-
     } catch {
       toast.error("Session expired");
       handleLogout();
@@ -245,9 +250,38 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
+  /*  CREATE TASK  */
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+
+    try {
+      await axios.post(
+        `${API_URL}/api/tasks`,
+        taskForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("Task created successfully!");
+      setShowModal(false);
+
+      setTaskForm({
+        title: "",
+        description: "",
+        deadline: ""
+      });
+
+      fetchTasks(); // reload list
+
+    } catch (err) {
+      toast.error("Failed to create task");
+    }
+  };
+
   return (
     <div className="dashboard-container">
 
+      {/*  NAVBAR */}
       <nav className="navbar">
         <div className="logo">
           <Lock size={22}/> TaskFlow
@@ -265,6 +299,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
         </div>
       </nav>
 
+      {/* CONTENT  */}
       <div className="content-wrapper">
 
         <div className="content-header">
@@ -275,67 +310,110 @@ const Dashboard = ({ setIsAuthenticated }) => {
             </p>
           </div>
 
+          {/*  FIXED NEW TASK BUTTON */}
           {role === "ROLE_ADMIN" && (
-            <button className="with-icon">
+            <button
+              className="with-icon"
+              onClick={() => setShowModal(true)}
+            >
               <Plus size={16}/> New Task
             </button>
           )}
         </div>
 
+        {/* TASK GRID */}
         <div className="task-grid">
           {tasks.map(task => (
-            <TaskCard key={task.id} task={task} role={role}/>
+            <TaskCard
+              key={task.id}
+              task={task}
+              role={role}
+            />
           ))}
         </div>
 
         {tasks.length === 0 && (
           <div className="empty-state">
             <p className="empty-title">No tasks found.</p>
-            <p className="empty-subtitle">Create one to get started.</p>
+            <p className="empty-subtitle">
+              Create one to get started.
+            </p>
           </div>
         )}
 
       </div>
+
+      {/*  MODAL  */}
+      {showModal && (
+        <div className="modal-overlay">
+
+          <div className="modal-box">
+
+            <h2 className="modal-title">
+              Create New Task
+            </h2>
+
+            <form
+              className="modal-form"
+              onSubmit={handleCreateTask}
+            >
+
+              <input
+                className="input-field"
+                placeholder="Task Title"
+                required
+                value={taskForm.title}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, title: e.target.value })
+                }
+              />
+
+              <textarea
+                className="input-field textarea"
+                placeholder="Task Description"
+                required
+                value={taskForm.description}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, description: e.target.value })
+                }
+              />
+
+              <input
+                type="date"
+                className="input-field"
+                required
+                value={taskForm.deadline}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, deadline: e.target.value })
+                }
+              />
+
+              {/* ACTION BUTTONS */}
+              <div className="modal-actions">
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  Create Task
+                </button>
+
+              </div>
+
+            </form>
+          </div>
+
+        </div>
+      )}
+
     </div>
   );
 };
-
-/* MAIN APP */
-
-function App() {
-
-  const [isAuthenticated, setIsAuthenticated] =
-    useState(!!localStorage.getItem("token"));
-
-  return (
-    <Router>
-
-      <ToastContainer position="top-right"/>
-
-      <Routes>
-
-        <Route
-          path="/"
-          element={
-            !isAuthenticated
-              ? <Auth setIsAuthenticated={setIsAuthenticated}/>
-              : <Navigate to="/dashboard"/>
-          }
-        />
-
-        <Route
-          path="/dashboard"
-          element={
-            isAuthenticated
-              ? <Dashboard setIsAuthenticated={setIsAuthenticated}/>
-              : <Navigate to="/"/>
-          }
-        />
-
-      </Routes>
-
-    </Router>
-  );
-}
-
-export default App;

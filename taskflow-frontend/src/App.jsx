@@ -9,13 +9,19 @@ import {
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from "react-toastify";
-import { LogOut, Plus, CheckCircle, Clock, User, Lock } from "lucide-react";
+import {
+  LogOut,
+  Plus,
+  CheckCircle,
+  Clock,
+  User,
+  Lock
+} from "lucide-react";
 import "./App.css";
 
 const API_URL = "https://api-gateway-m72v.onrender.com";
 
-
-// AUTH
+/* AUTH */
 
 const Auth = ({ setIsAuthenticated }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -39,7 +45,6 @@ const Auth = ({ setIsAuthenticated }) => {
 
       if (isLogin) {
         localStorage.setItem("token", data.jwt);
-
         toast.success("Login successful!");
         setIsAuthenticated(true);
         navigate("/dashboard");
@@ -69,7 +74,8 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Full Name"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })}
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
               />
 
               <input
@@ -77,13 +83,15 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Mobile"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, mobile: e.target.value })}
+                  setFormData({ ...formData, mobile: e.target.value })
+                }
               />
 
               <select
                 className="input-field"
                 onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })}
+                  setFormData({ ...formData, role: e.target.value })
+                }
               >
                 <option value="ROLE_USER">User</option>
                 <option value="ROLE_ADMIN">Admin</option>
@@ -97,7 +105,8 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Email"
             required
             onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })}
+              setFormData({ ...formData, email: e.target.value })
+            }
           />
 
           <input
@@ -106,7 +115,8 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Password"
             required
             onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })}
+              setFormData({ ...formData, password: e.target.value })
+            }
           />
 
           <button className="btn-primary">
@@ -125,9 +135,8 @@ const Auth = ({ setIsAuthenticated }) => {
   );
 };
 
+/*TASK CARD*/
 
-
-// TASK CARD
 const TaskCard = ({ task, role }) => {
   const [showSubmit, setShowSubmit] = useState(false);
   const [githubLink, setGithubLink] = useState("");
@@ -144,18 +153,21 @@ const TaskCard = ({ task, role }) => {
 
       toast.success("Task submitted!");
       setShowSubmit(false);
+
     } catch {
       toast.error("Submission failed");
     }
   };
 
   return (
-    <div className="task-card">
+    <div className={`task-card ${task.status === "DONE" ? "border-green" : "border-yellow"}`}>
 
       <div className="card-header">
         <div>
-          <h3>{task.title}</h3>
-          <span>{task.status}</span>
+          <h3 className="task-title">{task.title}</h3>
+          <span className={`status-badge ${task.status === "DONE" ? "badge-green" : "badge-yellow"}`}>
+            {task.status}
+          </span>
         </div>
 
         {task.status === "DONE"
@@ -163,42 +175,47 @@ const TaskCard = ({ task, role }) => {
           : <Clock className="icon-yellow"/>}
       </div>
 
-      <p>{task.description}</p>
+      <p className="task-desc">{task.description}</p>
 
-      <p>
-        Deadline: {new Date(task.deadline).toLocaleDateString()}
-      </p>
+      <div className="card-footer">
+        <span className="deadline">
+          Deadline: {new Date(task.deadline).toLocaleDateString()}
+        </span>
 
-      {role !== "ROLE_ADMIN" && task.status !== "DONE" && (
-        <button onClick={() => setShowSubmit(!showSubmit)}>
-          {showSubmit ? "Cancel" : "Submit"}
-        </button>
-      )}
+        {role !== "ROLE_ADMIN" && task.status !== "DONE" && (
+          <button
+            className="btn-link"
+            onClick={() => setShowSubmit(!showSubmit)}
+          >
+            {showSubmit ? "Cancel" : "Submit Work"}
+          </button>
+        )}
+      </div>
 
       {showSubmit && (
-        <>
+        <div className="submission-box">
           <input
+            className="small-input"
             placeholder="GitHub Link"
             onChange={(e) => setGithubLink(e.target.value)}
           />
-          <button onClick={handleSubmit}>
-            Confirm
+
+          <button className="btn-success" onClick={handleSubmit}>
+            Confirm Submission
           </button>
-        </>
+        </div>
       )}
     </div>
   );
 };
 
-
-
-// DASHBOARD
+/*DASHBOARD*/
 
 const Dashboard = ({ setIsAuthenticated }) => {
+
   const [tasks, setTasks] = useState([]);
   const navigate = useNavigate();
 
-  // FIXED ROLE READ — match new JWT structure
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
 
@@ -232,49 +249,59 @@ const Dashboard = ({ setIsAuthenticated }) => {
     <div className="dashboard-container">
 
       <nav className="navbar">
-        <h1>
-          <Lock size={24}/> TaskFlow
-        </h1>
+        <div className="logo">
+          <Lock size={22}/> TaskFlow
+        </div>
 
         <div className="nav-right">
           <div className="user-info">
-            <User size={20}/>
+            <User size={18}/>
             <span>{role === "ROLE_ADMIN" ? "Admin" : "User"}</span>
           </div>
 
-          <button onClick={handleLogout}>
-            <LogOut size={22}/>
+          <button className="btn-logout" onClick={handleLogout}>
+            <LogOut size={18}/>
           </button>
         </div>
       </nav>
 
-      {/* ADMIN ONLY */}
-      {role === "ROLE_ADMIN" && (
-        <button className="btn-primary with-icon">
-          <Plus size={16}/> New Task
-        </button>
-      )}
+      <div className="content-wrapper">
 
-      <div className="task-grid">
-        {tasks.map(task => (
-          <TaskCard key={task.id} task={task} role={role}/>
-        ))}
-      </div>
+        <div className="content-header">
+          <div>
+            <h1 className="page-title">Dashboard</h1>
+            <p className="page-subtitle">
+              Manage your tasks efficiently
+            </p>
+          </div>
 
-      {tasks.length === 0 && (
-        <div>
-          <p>No tasks found.</p>
-          <p>Create one to get started!</p>
+          {role === "ROLE_ADMIN" && (
+            <button className="with-icon">
+              <Plus size={16}/> New Task
+            </button>
+          )}
         </div>
-      )}
 
+        <div className="task-grid">
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} role={role}/>
+          ))}
+        </div>
+
+        {tasks.length === 0 && (
+          <div className="empty-state">
+            <p className="empty-title">No tasks found.</p>
+            <p className="empty-subtitle">Create one to get started.</p>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
 
+/* MAIN APP */
 
-
-// MAIN APP
 function App() {
 
   const [isAuthenticated, setIsAuthenticated] =

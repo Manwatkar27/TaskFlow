@@ -17,11 +17,13 @@ import {
   User,
   Lock
 } from "lucide-react";
+
+import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
 const API_URL = "https://api-gateway-m72v.onrender.com";
 
-/* AUTH */
+/* ================= AUTH ================= */
 
 const Auth = ({ setIsAuthenticated }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -135,7 +137,7 @@ const Auth = ({ setIsAuthenticated }) => {
   );
 };
 
-/*TASK CARD*/
+/* ================= TASK CARD ================= */
 
 const TaskCard = ({ task, role }) => {
   const [showSubmit, setShowSubmit] = useState(false);
@@ -209,7 +211,7 @@ const TaskCard = ({ task, role }) => {
   );
 };
 
-/*DASHBOARD*/
+/* ================= DASHBOARD ================= */
 
 const Dashboard = ({ setIsAuthenticated }) => {
 
@@ -230,9 +232,10 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
   const fetchTasks = async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/tasks`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await axios.get(
+        `${API_URL}/api/tasks`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setTasks(data);
     } catch {
       toast.error("Session expired");
@@ -250,8 +253,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
-  /*  CREATE TASK  */
-
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
@@ -264,16 +265,10 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
       toast.success("Task created successfully!");
       setShowModal(false);
+      setTaskForm({ title: "", description: "", deadline: "" });
+      fetchTasks();
 
-      setTaskForm({
-        title: "",
-        description: "",
-        deadline: ""
-      });
-
-      fetchTasks(); // reload list
-
-    } catch (err) {
+    } catch {
       toast.error("Failed to create task");
     }
   };
@@ -281,7 +276,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
   return (
     <div className="dashboard-container">
 
-      {/*  NAVBAR */}
+      {/* NAVBAR */}
       <nav className="navbar">
         <div className="logo">
           <Lock size={22}/> TaskFlow
@@ -299,7 +294,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
         </div>
       </nav>
 
-      {/* CONTENT  */}
+      {/* CONTENT */}
       <div className="content-wrapper">
 
         <div className="content-header">
@@ -310,7 +305,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
             </p>
           </div>
 
-          {/*  FIXED NEW TASK BUTTON */}
           {role === "ROLE_ADMIN" && (
             <button
               className="with-icon"
@@ -321,7 +315,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
           )}
         </div>
 
-        {/* TASK GRID */}
         <div className="task-grid">
           {tasks.map(task => (
             <TaskCard
@@ -343,10 +336,8 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
       </div>
 
-      {/*  MODAL  */}
       {showModal && (
         <div className="modal-overlay">
-
           <div className="modal-box">
 
             <h2 className="modal-title">
@@ -388,9 +379,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
                 }
               />
 
-              {/* ACTION BUTTONS */}
               <div className="modal-actions">
-
                 <button
                   type="button"
                   className="btn-secondary"
@@ -405,16 +394,54 @@ const Dashboard = ({ setIsAuthenticated }) => {
                 >
                   Create Task
                 </button>
-
               </div>
 
             </form>
           </div>
-
         </div>
       )}
 
     </div>
   );
 };
+
+/* ================= MAIN APP ================= */
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  }, []);
+
+  return (
+    <Router>
+      <ToastContainer position="top-right" />
+
+      <Routes>
+
+        <Route
+          path="/"
+          element={
+            !isAuthenticated
+              ? <Auth setIsAuthenticated={setIsAuthenticated}/>
+              : <Navigate to="/dashboard" replace/>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            isAuthenticated
+              ? <Dashboard setIsAuthenticated={setIsAuthenticated}/>
+              : <Navigate to="/" replace/>
+          }
+        />
+
+      </Routes>
+    </Router>
+  );
+}
+
 export default App;

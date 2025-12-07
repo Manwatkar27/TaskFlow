@@ -417,3 +417,4 @@ const Dashboard = ({ setIsAuthenticated }) => {
     </div>
   );
 };
+export default App;

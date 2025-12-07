@@ -2,6 +2,7 @@ package in.aman.tasks.taskSecurityConfig;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.List;
 
 @Component
@@ -31,35 +34,46 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String jwtHeader = request.getHeader(JwtConstant.JWT_HEADER);
+        String jwtHeader = request.getHeader(JwtConstant.JWT_HEADER); // "Authorization"
 
         System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
         System.out.println("JWT SECRET IN VALIDATOR = " + secret);
 
-        if (jwtHeader != null && jwtHeader.startsWith("Bearer ")) {
+        // No header → just continue filter chain
+        if (jwtHeader == null || !jwtHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            String jwt = jwtHeader.substring(7);
+        String jwt = jwtHeader.substring(7);
 
-            try {
-                Claims claims = Jwts.parser()
-                        .setSigningKey(secret)
-                        .parseClaimsJws(jwt)
-                        .getBody();
+        try {
+            Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
-                String email = claims.get("email", String.class);
-                String authorities = claims.get("authorities", String.class);
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
 
-                List<GrantedAuthority> auth =
-                        AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
+            String email = claims.get("email", String.class);
+            String authorities = claims.get("authorities", String.class); // e.g. "ROLE_ADMIN"
 
-                Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, auth);
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            } catch (Exception e) {
-                throw new BadCredentialsException("Invalid JWT token", e);
+            if (authorities == null) {
+                authorities = "";
             }
+
+            List<GrantedAuthority> authList =
+                    AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
+
+            Authentication authentication =
+                    new UsernamePasswordAuthenticationToken(email, null, authList);
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        } catch (Exception e) {
+            System.out.println("JWT VALIDATION FAILED = " + e.getMessage());
+            throw new BadCredentialsException("Invalid JWT token", e);
         }
 
         filterChain.doFilter(request, response);

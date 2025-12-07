@@ -14,9 +14,10 @@ import "./App.css";
 
 const API_URL = "https://api-gateway-m72v.onrender.com";
 
-// AUTH COMPONENT
-const Auth = ({ setIsAuthenticated }) => {
 
+// AUTH
+
+const Auth = ({ setIsAuthenticated }) => {
   const [isLogin, setIsLogin] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -34,26 +35,18 @@ const Auth = ({ setIsAuthenticated }) => {
 
     try {
       const endpoint = isLogin ? "/auth/signin" : "/auth/signup";
-
       const { data } = await axios.post(API_URL + endpoint, formData);
 
       if (isLogin) {
-
-        const token = data.jwt;
-        localStorage.setItem("token", token);
+        localStorage.setItem("token", data.jwt);
 
         toast.success("Login successful!");
-
         setIsAuthenticated(true);
         navigate("/dashboard");
-
       } else {
-
         toast.success("Registration successful! Please login.");
         setIsLogin(true);
-
       }
-
     } catch (error) {
       toast.error(error?.response?.data?.message || "Authentication Failed");
     }
@@ -133,14 +126,13 @@ const Auth = ({ setIsAuthenticated }) => {
 };
 
 
+
 // TASK CARD
 const TaskCard = ({ task, role }) => {
-
   const [showSubmit, setShowSubmit] = useState(false);
   const [githubLink, setGithubLink] = useState("");
 
   const handleSubmit = async () => {
-
     try {
       const token = localStorage.getItem("token");
 
@@ -152,7 +144,6 @@ const TaskCard = ({ task, role }) => {
 
       toast.success("Task submitted!");
       setShowSubmit(false);
-
     } catch {
       toast.error("Submission failed");
     }
@@ -195,31 +186,26 @@ const TaskCard = ({ task, role }) => {
           </button>
         </>
       )}
-
     </div>
   );
 };
 
 
-// DASHBOARD
-const Dashboard = ({ setIsAuthenticated }) => {
 
+// DASHBOARD
+
+const Dashboard = ({ setIsAuthenticated }) => {
   const [tasks, setTasks] = useState([]);
   const navigate = useNavigate();
 
-  // get ROLE properly from authorities[]
+  // FIXED ROLE READ — match new JWT structure
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
 
-  const role =
-    decoded?.authorities?.includes("ROLE_ADMIN")
-      ? "ROLE_ADMIN"
-      : "ROLE_USER";
+  const role = decoded?.role || "ROLE_USER";
 
   const fetchTasks = async () => {
-
     try {
-
       const { data } = await axios.get(`${API_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -242,7 +228,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
-
   return (
     <div className="dashboard-container">
 
@@ -263,6 +248,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
         </div>
       </nav>
 
+      {/* ADMIN ONLY */}
       {role === "ROLE_ADMIN" && (
         <button className="btn-primary with-icon">
           <Plus size={16}/> New Task
@@ -285,6 +271,8 @@ const Dashboard = ({ setIsAuthenticated }) => {
     </div>
   );
 };
+
+
 
 // MAIN APP
 function App() {

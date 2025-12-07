@@ -64,5 +64,6 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8085/eureka}
 
+# this jwt.secret is not used by gateway code, but it's ok to keep
 jwt:
   secret: ${JWT_SECRET:local_jwt_secret_123}

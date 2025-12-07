@@ -16,6 +16,7 @@ const API_URL = "https://api-gateway-m72v.onrender.com";
 
 // AUTH COMPONENT
 const Auth = ({ setIsAuthenticated }) => {
+
   const [isLogin, setIsLogin] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -36,22 +37,21 @@ const Auth = ({ setIsAuthenticated }) => {
 
       const { data } = await axios.post(API_URL + endpoint, formData);
 
-      //LOGIN
       if (isLogin) {
-        const token = data.jwt;
 
+        const token = data.jwt;
         localStorage.setItem("token", token);
 
         toast.success("Login successful!");
 
         setIsAuthenticated(true);
         navigate("/dashboard");
-      }
 
-      //REGISTER
-      else {
+      } else {
+
         toast.success("Registration successful! Please login.");
         setIsLogin(true);
+
       }
 
     } catch (error) {
@@ -131,12 +131,16 @@ const Auth = ({ setIsAuthenticated }) => {
     </div>
   );
 };
+
+
 // TASK CARD
 const TaskCard = ({ task, role }) => {
+
   const [showSubmit, setShowSubmit] = useState(false);
   const [githubLink, setGithubLink] = useState("");
 
   const handleSubmit = async () => {
+
     try {
       const token = localStorage.getItem("token");
 
@@ -155,7 +159,7 @@ const TaskCard = ({ task, role }) => {
   };
 
   return (
-    <div className={`task-card`}>
+    <div className="task-card">
 
       <div className="card-header">
         <div>
@@ -196,18 +200,26 @@ const TaskCard = ({ task, role }) => {
   );
 };
 
+
 // DASHBOARD
 const Dashboard = ({ setIsAuthenticated }) => {
+
   const [tasks, setTasks] = useState([]);
   const navigate = useNavigate();
 
-  //Always decode role from JWT
+  // get ROLE properly from authorities[]
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
-  const role = decoded?.role || "ROLE_USER";
+
+  const role =
+    decoded?.authorities?.includes("ROLE_ADMIN")
+      ? "ROLE_ADMIN"
+      : "ROLE_USER";
 
   const fetchTasks = async () => {
+
     try {
+
       const { data } = await axios.get(`${API_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -229,6 +241,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
     setIsAuthenticated(false);
     navigate("/");
   };
+
 
   return (
     <div className="dashboard-container">
@@ -258,7 +271,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
       <div className="task-grid">
         {tasks.map(task => (
-          <TaskCard key={task.id} task={task} role={role} />
+          <TaskCard key={task.id} task={task} role={role}/>
         ))}
       </div>
 

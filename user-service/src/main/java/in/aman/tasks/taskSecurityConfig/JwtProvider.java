@@ -1,5 +1,6 @@
 package in.aman.tasks.taskSecurityConfig;
 
+import in.aman.tasks.usermodel.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -19,19 +20,15 @@ public class JwtProvider {
 
     public String generateToken(Authentication auth) {
 
-        //ALWAYS correct email
         String email = auth.getName();
 
-        // HARDCODE ROLE FETCH FROM PRINCIPAL STRING
-        // Because your authorities are NOT being populated correctly
+        // DIRECTLY READ ROLE FROM USER ENTITY
+        Object principal = auth.getPrincipal();
+
         String role = "ROLE_USER";
 
-        if (auth.getPrincipal() != null) {
-            String principal = auth.getPrincipal().toString();
-
-            if (principal.contains("ROLE_ADMIN")) {
-                role = "ROLE_ADMIN";
-            }
+        if (principal instanceof User user) {
+            role = user.getRole();      // THIS FIXES EVERYTHING
         }
 
         Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -39,15 +36,14 @@ public class JwtProvider {
         String jwt = Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24 hours
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
                 .claim("email", email)
-                .claim("role", role)                // send role for frontend
-                .claim("authorities", role)         // send authorities for backend
+                .claim("role", role)
+                .claim("authorities", role) // 👈 REQUIRED FOR ROLE parsing
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
         // DEBUG LOGS
-
         System.out.println("JWT EMAIL = " + email);
         System.out.println("JWT ROLE USED = " + role);
         System.out.println("JWT AUTHORITIES USED = " + role);

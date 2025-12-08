@@ -24,7 +24,7 @@ public class TaskServiceImplementation implements TaskService {
 
     @Override
     public Task create(Task task, String requestRole) throws Exception {
-        if (!requestRole.equals("ROLE_ADMIN")) {
+    	if (!"ROLE_ADMIN".equals(requestRole)) {
             throw new Exception("Only admin can create tasks");
         }
 

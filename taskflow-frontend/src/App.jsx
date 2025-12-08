@@ -6,7 +6,6 @@ import {
   Navigate,
   useNavigate
 } from "react-router-dom";
-
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from "react-toastify";
@@ -16,7 +15,7 @@ import {
   CheckCircle,
   Clock,
   User,
-  Lock
+  Lock,
 } from "lucide-react";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -28,13 +27,12 @@ const API_URL = "https://api-gateway-m72v.onrender.com";
 
 const Auth = ({ setIsAuthenticated }) => {
   const [isLogin, setIsLogin] = useState(true);
-
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     role: "ROLE_USER",
-    mobile: ""
+    mobile: "",
   });
 
   const navigate = useNavigate();
@@ -52,24 +50,24 @@ const Auth = ({ setIsAuthenticated }) => {
         setIsAuthenticated(true);
         navigate("/dashboard");
       } else {
-        toast.success("Registration successful! Login now.");
+        toast.success("Registration successful! Please login.");
         setIsLogin(true);
       }
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Authentication Failed");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Authentication Failed"
+      );
     }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
-
         <h2 className="auth-title">
           {isLogin ? "TaskFlow Login" : "Create Account"}
         </h2>
 
         <form onSubmit={handleSubmit} className="auth-form">
-
           {!isLogin && (
             <>
               <input
@@ -77,7 +75,11 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Full Name"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })}
+                  setFormData({
+                    ...formData,
+                    fullName: e.target.value,
+                  })
+                }
               />
 
               <input
@@ -85,13 +87,21 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Mobile"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, mobile: e.target.value })}
+                  setFormData({
+                    ...formData,
+                    mobile: e.target.value,
+                  })
+                }
               />
 
               <select
                 className="input-field"
                 onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })}
+                  setFormData({
+                    ...formData,
+                    role: e.target.value,
+                  })
+                }
               >
                 <option value="ROLE_USER">User</option>
                 <option value="ROLE_ADMIN">Admin</option>
@@ -105,7 +115,11 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Email"
             required
             onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })}
+              setFormData({
+                ...formData,
+                email: e.target.value,
+              })
+            }
           />
 
           <input
@@ -114,7 +128,11 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Password"
             required
             onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })}
+              setFormData({
+                ...formData,
+                password: e.target.value,
+              })
+            }
           />
 
           <button className="btn-primary">
@@ -122,76 +140,136 @@ const Auth = ({ setIsAuthenticated }) => {
           </button>
         </form>
 
-        <p className="auth-switch" onClick={() => setIsLogin(!isLogin)}>
+        <p
+          className="auth-switch"
+          onClick={() => setIsLogin(!isLogin)}
+        >
           {isLogin
             ? "Don't have an account? Register"
             : "Already have an account? Login"}
         </p>
-
       </div>
     </div>
   );
 };
 
-
 /* ================= TASK CARD ================= */
 
 const TaskCard = ({ task, role }) => {
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [githubLink, setGithubLink] = useState("");
+
+  const handleSubmit = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        `${API_URL}/api/submissions?task_id=${task.id}&github_link=${githubLink}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Task submitted!");
+      setShowSubmit(false);
+    } catch {
+      toast.error("Submission failed");
+    }
+  };
 
   return (
-    <div className={`task-card ${task.status === "DONE" ? "border-green" : "border-yellow"}`}>
-
+    <div
+      className={`task-card ${
+        task.status === "DONE"
+          ? "border-green"
+          : "border-yellow"
+      }`}
+    >
       <div className="card-header">
         <div>
           <h3 className="task-title">{task.title}</h3>
-          <span className={`status-badge ${task.status === "DONE" ? "badge-green" : "badge-yellow"}`}>
+
+          <span
+            className={`status-badge ${
+              task.status === "DONE"
+                ? "badge-green"
+                : "badge-yellow"
+            }`}
+          >
             {task.status}
           </span>
         </div>
 
-        {task.status === "DONE"
-          ? <CheckCircle className="icon-green"/>
-          : <Clock className="icon-yellow"/>}
+        {task.status === "DONE" ? (
+          <CheckCircle className="icon-green" />
+        ) : (
+          <Clock className="icon-yellow" />
+        )}
       </div>
 
       <p className="task-desc">{task.description}</p>
 
       <div className="card-footer">
         <span className="deadline">
+          Deadline:{" "}
           {new Date(task.deadline).toLocaleDateString()}
         </span>
+
+        {role !== "ROLE_ADMIN" &&
+          task.status !== "DONE" && (
+            <button
+              className="btn-link"
+              onClick={() =>
+                setShowSubmit(!showSubmit)
+              }
+            >
+              {showSubmit
+                ? "Cancel"
+                : "Submit Work"}
+            </button>
+          )}
       </div>
     </div>
   );
 };
 
-
 /* ================= DASHBOARD ================= */
 
 const Dashboard = ({ setIsAuthenticated }) => {
-
   const [tasks, setTasks] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] =
+    useState(false);
 
-  const [taskForm, setTaskForm] = useState({
-    title: "",
-    description: "",
-    deadline: ""
-  });
+  const [taskForm, setTaskForm] =
+    useState({
+      title: "",
+      description: "",
+      deadline: "",
+    });
 
   const navigate = useNavigate();
+
   const token = localStorage.getItem("token");
+  const decoded = token
+    ? jwtDecode(token)
+    : null;
 
-  const decoded = token ? jwtDecode(token) : null;
-  const role = decoded?.role || "ROLE_USER";
-
-  const headers = {
-    Authorization: `Bearer ${token}`
-  };
+  const role =
+    decoded?.role || "ROLE_USER";
 
   const fetchTasks = async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/tasks`, { headers });
+      const { data } = await axios.get(
+        `${API_URL}/api/tasks`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setTasks(data);
     } catch {
       toast.error("Session expired");
@@ -209,84 +287,96 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
-  /* ✅ FIXED CREATE TASK HANDLER */
+  /* 🔥 FRONTEND FIX HERE */
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
     try {
-      if (!taskForm.deadline) {
-        toast.error("Deadline required");
-        return;
-      }
+      const deadlineWithTime = `${taskForm.deadline}T00:00:00`;
 
-      // Convert YYYY-MM-DD → ISO for LocalDateTime
       const payload = {
         title: taskForm.title,
         description: taskForm.description,
-        deadline: `${taskForm.deadline}T00:00:00`
+        deadline: deadlineWithTime,
       };
 
-      await axios.post(`${API_URL}/api/tasks`, payload, { headers });
+      await axios.post(
+        `${API_URL}/api/tasks`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      toast.success("✅ Task created successfully!");
+      toast.success("Task created successfully!");
 
+      setShowModal(false);
       setTaskForm({
         title: "",
         description: "",
-        deadline: ""
+        deadline: "",
       });
 
-      setShowModal(false);
       fetchTasks();
-
     } catch (err) {
-      console.error("CREATE TASK ERROR:", err.response?.data || err);
+      console.error(err);
       toast.error("Failed to create task");
     }
   };
 
-
   return (
     <div className="dashboard-container">
-
-      {/* NAVBAR */}
       <nav className="navbar">
         <div className="logo">
-          <Lock size={22}/> TaskFlow
+          <Lock size={22} /> TaskFlow
         </div>
 
         <div className="nav-right">
           <div className="user-info">
-            <User size={18}/>
-            <span>{role === "ROLE_ADMIN" ? "Admin" : "User"}</span>
+            <User size={18} />
+            <span>
+              {role === "ROLE_ADMIN"
+                ? "Admin"
+                : "User"}
+            </span>
           </div>
 
-          <button className="btn-logout" onClick={handleLogout}>
-            <LogOut size={18}/>
+          <button
+            className="btn-logout"
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
           </button>
         </div>
       </nav>
 
       <div className="content-wrapper">
-
         <div className="content-header">
           <div>
-            <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Manage your tasks efficiently</p>
+            <h1 className="page-title">
+              Dashboard
+            </h1>
+            <p className="page-subtitle">
+              Manage your tasks efficiently
+            </p>
           </div>
 
           {role === "ROLE_ADMIN" && (
             <button
               className="with-icon"
-              onClick={() => setShowModal(true)}
+              onClick={() =>
+                setShowModal(true)
+              }
             >
-              <Plus size={16}/> New Task
+              <Plus size={16} /> New Task
             </button>
           )}
         </div>
 
         <div className="task-grid">
-          {tasks.map(task => (
+          {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -295,38 +385,57 @@ const Dashboard = ({ setIsAuthenticated }) => {
           ))}
         </div>
 
+        {tasks.length === 0 && (
+          <div className="empty-state">
+            <p className="empty-title">
+              No tasks found.
+            </p>
+            <p className="empty-subtitle">
+              Create one to get started.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* MODAL */}
       {showModal && (
-
         <div className="modal-overlay">
-
           <div className="modal-box">
-
-            <h2 className="modal-title">Create New Task</h2>
+            <h2 className="modal-title">
+              Create New Task
+            </h2>
 
             <form
               className="modal-form"
               onSubmit={handleCreateTask}
             >
-
               <input
                 className="input-field"
                 placeholder="Task Title"
                 required
                 value={taskForm.title}
-                onChange={e =>
-                  setTaskForm({ ...taskForm, title: e.target.value })}
+                onChange={(e) =>
+                  setTaskForm({
+                    ...taskForm,
+                    title: e.target.value,
+                  })
+                }
               />
 
               <textarea
                 className="input-field textarea"
                 placeholder="Task Description"
                 required
-                value={taskForm.description}
-                onChange={e =>
-                  setTaskForm({ ...taskForm, description: e.target.value })}
+                value={
+                  taskForm.description
+                }
+                onChange={(e) =>
+                  setTaskForm({
+                    ...taskForm,
+                    description:
+                      e.target
+                        .value,
+                  })
+                }
               />
 
               <input
@@ -334,16 +443,23 @@ const Dashboard = ({ setIsAuthenticated }) => {
                 className="input-field"
                 required
                 value={taskForm.deadline}
-                onChange={e =>
-                  setTaskForm({ ...taskForm, deadline: e.target.value })}
+                onChange={(e) =>
+                  setTaskForm({
+                    ...taskForm,
+                    deadline:
+                      e.target
+                        .value,
+                  })
+                }
               />
 
               <div className="modal-actions">
-
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => setShowModal(false)}
+                  onClick={() =>
+                    setShowModal(false)
+                  }
                 >
                   Cancel
                 </button>
@@ -354,58 +470,68 @@ const Dashboard = ({ setIsAuthenticated }) => {
                 >
                   Create Task
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 };
 
-
 /* ================= MAIN ================= */
 
 function App() {
-
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(false);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem("token"));
+    setIsAuthenticated(
+      !!localStorage.getItem("token")
+    );
   }, []);
 
   return (
     <Router>
-
       <ToastContainer position="top-right" />
 
       <Routes>
-
         <Route
           path="/"
           element={
-            !isAuthenticated
-              ? <Auth setIsAuthenticated={setIsAuthenticated}/>
-              : <Navigate to="/dashboard" replace/>
+            !isAuthenticated ? (
+              <Auth
+                setIsAuthenticated={
+                  setIsAuthenticated
+                }
+              />
+            ) : (
+              <Navigate
+                to="/dashboard"
+                replace
+              />
+            )
           }
         />
 
         <Route
           path="/dashboard"
           element={
-            isAuthenticated
-              ? <Dashboard setIsAuthenticated={setIsAuthenticated}/>
-              : <Navigate to="/" replace/>
+            isAuthenticated ? (
+              <Dashboard
+                setIsAuthenticated={
+                  setIsAuthenticated
+                }
+              />
+            ) : (
+              <Navigate
+                to="/"
+                replace
+              />
+            )
           }
         />
-
       </Routes>
-
     </Router>
   );
 }

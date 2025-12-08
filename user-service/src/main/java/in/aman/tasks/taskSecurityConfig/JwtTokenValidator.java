@@ -83,7 +83,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             System.out.println("JWT VALIDATION FAILED : " + e.getMessage());
 
             throw new BadCredentialsException("Invalid JWT token", e);
-        }
+        }     
 
         filterChain.doFilter(request, response);
     }

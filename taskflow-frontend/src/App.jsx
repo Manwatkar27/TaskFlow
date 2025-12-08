@@ -289,42 +289,46 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
   /* 🔥 FRONTEND FIX HERE */
   const handleCreateTask = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const deadlineWithTime = `${taskForm.deadline}T00:00:00`;
+  try {
+    const deadlineWithTime = `${taskForm.deadline}T00:00:00`;
 
-      const payload = {
-        title: taskForm.title,
-        description: taskForm.description,
-        deadline: deadlineWithTime,
-      };
+    // ✅ FULL PAYLOAD REQUIRED BY BACKEND
+    const payload = {
+      title: taskForm.title,
+      description: taskForm.description,
+      deadline: deadlineWithTime,
+      status: "PENDING",                   // ✅ REQUIRED
+      createAt: new Date().toISOString()  // ✅ REQUIRED
+    };
 
-      await axios.post(
-        `${API_URL}/api/tasks`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    await axios.post(
+      `${API_URL}/api/tasks`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      }
+    );
 
-      toast.success("Task created successfully!");
+    toast.success("Task created successfully!");
 
-      setShowModal(false);
-      setTaskForm({
-        title: "",
-        description: "",
-        deadline: "",
-      });
+    setShowModal(false);
+    setTaskForm({
+      title: "",
+      description: "",
+      deadline: ""
+    });
 
-      fetchTasks();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to create task");
-    }
-  };
+    fetchTasks();
+
+  } catch (err) {
+    console.error("CREATE TASK ERROR:", err.response?.data || err);
+    toast.error("Failed to create task");
+  }
+};
 
   return (
     <div className="dashboard-container">

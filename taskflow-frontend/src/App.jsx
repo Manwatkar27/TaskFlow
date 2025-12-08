@@ -288,19 +288,23 @@ const Dashboard = ({ setIsAuthenticated }) => {
   };
 
   /* 🔥 FRONTEND FIX HERE */
-  const handleCreateTask = async (e) => {
+ const handleCreateTask = async (e) => {
   e.preventDefault();
 
   try {
-    const deadlineWithTime = `${taskForm.deadline}T00:00:00`;
-
-    // ✅ FULL PAYLOAD REQUIRED BY BACKEND
     const payload = {
       title: taskForm.title,
       description: taskForm.description,
-      deadline: deadlineWithTime,
-      status: "PENDING",                   // ✅ REQUIRED
-      createAt: new Date().toISOString()  // ✅ REQUIRED
+
+      // ✅ MUST send full ISO DateTime
+      deadline: `${taskForm.deadline}T00:00:00`,
+
+      // ✅ ALL REQUIRED BACKEND FIELDS
+      createAt: new Date().toISOString(),
+      status: "PENDING",
+      imageUrl: "",
+      assignedUserId: null,
+      tags: []
     };
 
     await axios.post(
@@ -315,6 +319,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
     toast.success("Task created successfully!");
 
+    // reset form
     setShowModal(false);
     setTaskForm({
       title: "",
@@ -325,10 +330,11 @@ const Dashboard = ({ setIsAuthenticated }) => {
     fetchTasks();
 
   } catch (err) {
-    console.error("CREATE TASK ERROR:", err.response?.data || err);
+    console.error("CREATE TASK ERROR:", err?.response?.data || err);
     toast.error("Failed to create task");
   }
 };
+
 
   return (
     <div className="dashboard-container">

@@ -25,29 +25,36 @@ import java.util.List;
 @Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:}")   // ✅ Default empty string prevents NPE
     private String secret;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        String jwtHeader = request.getHeader(JwtConstant.JWT_HEADER); // "Authorization"
+        String jwtHeader = request.getHeader("Authorization");
 
         System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
         System.out.println("JWT SECRET IN VALIDATOR = " + secret);
 
-        // No header → just continue filter chain
+        // ✅ If no Authorization header → skip validation
         if (jwtHeader == null || !jwtHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // ✅ If JWT secret is missing → explicit error (prevents NPE)
+        if (secret == null || secret.isBlank()) {
+            throw new RuntimeException("JWT_SECRET is NOT set in environment variables!");
+        }
+
         String jwt = jwtHeader.substring(7);
 
         try {
+            // ✅ Build key safely
             Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
             Claims claims = Jwts.parserBuilder()
@@ -57,11 +64,9 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                     .getBody();
 
             String email = claims.get("email", String.class);
-            String authorities = claims.get("authorities", String.class); // e.g. "ROLE_ADMIN"
+            String authorities = claims.get("authorities", String.class);
 
-            if (authorities == null) {
-                authorities = "";
-            }
+            if (authorities == null) authorities = "";
 
             List<GrantedAuthority> authList =
                     AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);

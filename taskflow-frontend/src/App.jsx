@@ -4,8 +4,9 @@ import {
   Routes,
   Route,
   Navigate,
-  useNavigate,
+  useNavigate
 } from "react-router-dom";
+
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from "react-toastify";
@@ -23,10 +24,9 @@ import "./App.css";
 
 const API_URL = "https://api-gateway-m72v.onrender.com";
 
-/*  AUTH  */
+/* ================= AUTH ================= */
 
 const Auth = ({ setIsAuthenticated }) => {
-
   const [isLogin, setIsLogin] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -48,16 +48,15 @@ const Auth = ({ setIsAuthenticated }) => {
 
       if (isLogin) {
         localStorage.setItem("token", data.jwt);
-        toast.success("✅ Login successful!");
+        toast.success("Login successful!");
         setIsAuthenticated(true);
         navigate("/dashboard");
       } else {
-        toast.success("✅ Account created! Login now.");
+        toast.success("Registration successful! Login now.");
         setIsLogin(true);
       }
-
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "❌ Authentication Failed");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Authentication Failed");
     }
   };
 
@@ -78,8 +77,7 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Full Name"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })
-                }
+                  setFormData({ ...formData, fullName: e.target.value })}
               />
 
               <input
@@ -87,15 +85,13 @@ const Auth = ({ setIsAuthenticated }) => {
                 placeholder="Mobile"
                 required
                 onChange={(e) =>
-                  setFormData({ ...formData, mobile: e.target.value })
-                }
+                  setFormData({ ...formData, mobile: e.target.value })}
               />
 
               <select
                 className="input-field"
                 onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
+                  setFormData({ ...formData, role: e.target.value })}
               >
                 <option value="ROLE_USER">User</option>
                 <option value="ROLE_ADMIN">Admin</option>
@@ -109,8 +105,7 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Email"
             required
             onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
+              setFormData({ ...formData, email: e.target.value })}
           />
 
           <input
@@ -119,11 +114,10 @@ const Auth = ({ setIsAuthenticated }) => {
             placeholder="Password"
             required
             onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
+              setFormData({ ...formData, password: e.target.value })}
           />
 
-          <button className="btn-primary" type="submit">
+          <button className="btn-primary">
             {isLogin ? "Login" : "Register"}
           </button>
         </form>
@@ -139,35 +133,10 @@ const Auth = ({ setIsAuthenticated }) => {
   );
 };
 
-/* TASK CARD  */
+
+/* ================= TASK CARD ================= */
 
 const TaskCard = ({ task, role }) => {
-
-  const [showSubmit, setShowSubmit] = useState(false);
-  const [githubLink, setGithubLink] = useState("");
-
-  const handleSubmit = async () => {
-
-    try {
-      const token = localStorage.getItem("token");
-
-      await axios.post(
-        `${API_URL}/api/submissions?task_id=${task.id}&github_link=${githubLink}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      toast.success("✅ Task submitted!");
-      setShowSubmit(false);
-
-    } catch {
-      toast.error("❌ Submission failed");
-    }
-  };
 
   return (
     <div className={`task-card ${task.status === "DONE" ? "border-green" : "border-yellow"}`}>
@@ -175,65 +144,29 @@ const TaskCard = ({ task, role }) => {
       <div className="card-header">
         <div>
           <h3 className="task-title">{task.title}</h3>
-
-          <span
-            className={`status-badge ${
-              task.status === "DONE" ? "badge-green" : "badge-yellow"
-            }`}
-          >
+          <span className={`status-badge ${task.status === "DONE" ? "badge-green" : "badge-yellow"}`}>
             {task.status}
           </span>
         </div>
 
         {task.status === "DONE"
           ? <CheckCircle className="icon-green"/>
-          : <Clock className="icon-yellow"/>
-        }
+          : <Clock className="icon-yellow"/>}
       </div>
 
-      <p className="task-desc">
-        {task.description}
-      </p>
+      <p className="task-desc">{task.description}</p>
 
       <div className="card-footer">
-
         <span className="deadline">
-          Deadline: {new Date(task.deadline).toLocaleDateString()}
+          {new Date(task.deadline).toLocaleDateString()}
         </span>
-
-        {role !== "ROLE_ADMIN" && task.status !== "DONE" && (
-          <button
-            className="btn-link"
-            onClick={() => setShowSubmit(!showSubmit)}
-          >
-            {showSubmit ? "Cancel" : "Submit Work"}
-          </button>
-        )}
       </div>
-
-      {showSubmit && (
-        <div className="submission-box">
-
-          <input
-            className="small-input"
-            placeholder="GitHub Link"
-            onChange={e => setGithubLink(e.target.value)}
-          />
-
-          <button
-            className="btn-success"
-            onClick={handleSubmit}
-          >
-            Confirm Submission
-          </button>
-
-        </div>
-      )}
     </div>
   );
 };
 
-/*  DASHBOARD  */
+
+/* ================= DASHBOARD ================= */
 
 const Dashboard = ({ setIsAuthenticated }) => {
 
@@ -247,30 +180,21 @@ const Dashboard = ({ setIsAuthenticated }) => {
   });
 
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
-  const decoded = token ? jwtDecode(token) : null;
 
+  const decoded = token ? jwtDecode(token) : null;
   const role = decoded?.role || "ROLE_USER";
 
-  /* LOAD TASKS */
+  const headers = {
+    Authorization: `Bearer ${token}`
+  };
 
   const fetchTasks = async () => {
-
     try {
-      const { data } = await axios.get(
-        `${API_URL}/api/tasks`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
+      const { data } = await axios.get(`${API_URL}/api/tasks`, { headers });
       setTasks(data);
-
     } catch {
-      toast.error("⚠️ Session expired");
+      toast.error("Session expired");
       handleLogout();
     }
   };
@@ -285,33 +209,26 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
-  /* CREATE TASK */
-
+  /* ✅ FIXED CREATE TASK HANDLER */
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
     try {
+      if (!taskForm.deadline) {
+        toast.error("Deadline required");
+        return;
+      }
 
+      // Convert YYYY-MM-DD → ISO for LocalDateTime
       const payload = {
-        taskTitle: taskForm.title,
-        taskDescription: taskForm.description,
-        dueDate: taskForm.deadline
+        title: taskForm.title,
+        description: taskForm.description,
+        deadline: `${taskForm.deadline}T00:00:00`
       };
 
-      await axios.post(
-        `${API_URL}/api/tasks`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+      await axios.post(`${API_URL}/api/tasks`, payload, { headers });
 
-      toast.success("✅ Task created!");
-
-      setShowModal(false);
+      toast.success("✅ Task created successfully!");
 
       setTaskForm({
         title: "",
@@ -319,27 +236,26 @@ const Dashboard = ({ setIsAuthenticated }) => {
         deadline: ""
       });
 
+      setShowModal(false);
       fetchTasks();
 
-    } catch (error) {
-      console.error(error);
-      toast.error("❌ Failed to create task");
+    } catch (err) {
+      console.error("CREATE TASK ERROR:", err.response?.data || err);
+      toast.error("Failed to create task");
     }
   };
+
 
   return (
     <div className="dashboard-container">
 
-      {/* NAV */}
-
+      {/* NAVBAR */}
       <nav className="navbar">
-
         <div className="logo">
           <Lock size={22}/> TaskFlow
         </div>
 
         <div className="nav-right">
-
           <div className="user-info">
             <User size={18}/>
             <span>{role === "ROLE_ADMIN" ? "Admin" : "User"}</span>
@@ -348,16 +264,12 @@ const Dashboard = ({ setIsAuthenticated }) => {
           <button className="btn-logout" onClick={handleLogout}>
             <LogOut size={18}/>
           </button>
-
         </div>
       </nav>
-
-      {/* CONTENT */}
 
       <div className="content-wrapper">
 
         <div className="content-header">
-
           <div>
             <h1 className="page-title">Dashboard</h1>
             <p className="page-subtitle">Manage your tasks efficiently</p>
@@ -383,61 +295,47 @@ const Dashboard = ({ setIsAuthenticated }) => {
           ))}
         </div>
 
-        {tasks.length === 0 && (
-          <div className="empty-state">
-            <p className="empty-title">No tasks found.</p>
-            <p className="empty-subtitle">
-              Create one to get started.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* MODAL */}
-
       {showModal && (
 
         <div className="modal-overlay">
 
           <div className="modal-box">
 
-            <h2 className="modal-title">
-              Create New Task
-            </h2>
+            <h2 className="modal-title">Create New Task</h2>
 
             <form
-              onSubmit={handleCreateTask}
               className="modal-form"
+              onSubmit={handleCreateTask}
             >
 
               <input
                 className="input-field"
                 placeholder="Task Title"
-                value={taskForm.title}
                 required
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, title: e.target.value })
-                }
+                value={taskForm.title}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, title: e.target.value })}
               />
 
               <textarea
                 className="input-field textarea"
                 placeholder="Task Description"
-                value={taskForm.description}
                 required
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, description: e.target.value })
-                }
+                value={taskForm.description}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, description: e.target.value })}
               />
 
               <input
                 type="date"
                 className="input-field"
-                value={taskForm.deadline}
                 required
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, deadline: e.target.value })
-                }
+                value={taskForm.deadline}
+                onChange={e =>
+                  setTaskForm({ ...taskForm, deadline: e.target.value })}
               />
 
               <div className="modal-actions">
@@ -450,7 +348,10 @@ const Dashboard = ({ setIsAuthenticated }) => {
                   Cancel
                 </button>
 
-                <button type="submit" className="btn-primary">
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
                   Create Task
                 </button>
 
@@ -467,7 +368,8 @@ const Dashboard = ({ setIsAuthenticated }) => {
   );
 };
 
-/* MAIN APP */
+
+/* ================= MAIN ================= */
 
 function App() {
 
@@ -480,7 +382,7 @@ function App() {
   return (
     <Router>
 
-      <ToastContainer position="top-right"/>
+      <ToastContainer position="top-right" />
 
       <Routes>
 

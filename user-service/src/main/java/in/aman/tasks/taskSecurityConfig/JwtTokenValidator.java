@@ -25,36 +25,36 @@ import java.util.List;
 @Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
-    @Value("${jwt.secret:}")   // ✅ Default empty string prevents NPE
+    @Value("${jwt.secret:}")
     private String secret;
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String jwtHeader = request.getHeader("Authorization");
 
         System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
         System.out.println("JWT SECRET IN VALIDATOR = " + secret);
 
-        // ✅ If no Authorization header → skip validation
+        // ✅ Allow public requests to continue
         if (jwtHeader == null || !jwtHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // ✅ If JWT secret is missing → explicit error (prevents NPE)
+        // ✅ Prevent 500 crash if env accidentally not injected
         if (secret == null || secret.isBlank()) {
-            throw new RuntimeException("JWT_SECRET is NOT set in environment variables!");
+            System.out.println("WARNING : JWT_SECRET is NULL. Skipping token validation.");
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        String jwt = jwtHeader.substring(7);
-
         try {
-            // ✅ Build key safely
+            String jwt = jwtHeader.substring(7);
+
             Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
             Claims claims = Jwts.parserBuilder()
@@ -66,7 +66,9 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             String email = claims.get("email", String.class);
             String authorities = claims.get("authorities", String.class);
 
-            if (authorities == null) authorities = "";
+            if (authorities == null) {
+                authorities = "";
+            }
 
             List<GrantedAuthority> authList =
                     AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
@@ -77,7 +79,9 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception e) {
-            System.out.println("JWT VALIDATION FAILED = " + e.getMessage());
+
+            System.out.println("JWT VALIDATION FAILED : " + e.getMessage());
+
             throw new BadCredentialsException("Invalid JWT token", e);
         }
 

@@ -4,7 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
-  useNavigate
+  useNavigate,
 } from "react-router-dom";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
@@ -23,9 +23,10 @@ import "./App.css";
 
 const API_URL = "https://api-gateway-m72v.onrender.com";
 
-/* ================= AUTH ================= */
+/*  AUTH  */
 
 const Auth = ({ setIsAuthenticated }) => {
+
   const [isLogin, setIsLogin] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -47,15 +48,16 @@ const Auth = ({ setIsAuthenticated }) => {
 
       if (isLogin) {
         localStorage.setItem("token", data.jwt);
-        toast.success("Login successful!");
+        toast.success("✅ Login successful!");
         setIsAuthenticated(true);
         navigate("/dashboard");
       } else {
-        toast.success("Registration successful! Please login.");
+        toast.success("✅ Account created! Login now.");
         setIsLogin(true);
       }
+
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Authentication Failed");
+      toast.error(error?.response?.data?.message || "❌ Authentication Failed");
     }
   };
 
@@ -121,7 +123,7 @@ const Auth = ({ setIsAuthenticated }) => {
             }
           />
 
-          <button className="btn-primary">
+          <button className="btn-primary" type="submit">
             {isLogin ? "Login" : "Register"}
           </button>
         </form>
@@ -137,27 +139,33 @@ const Auth = ({ setIsAuthenticated }) => {
   );
 };
 
-/* ================= TASK CARD ================= */
+/* TASK CARD  */
 
 const TaskCard = ({ task, role }) => {
+
   const [showSubmit, setShowSubmit] = useState(false);
   const [githubLink, setGithubLink] = useState("");
 
   const handleSubmit = async () => {
+
     try {
       const token = localStorage.getItem("token");
 
       await axios.post(
         `${API_URL}/api/submissions?task_id=${task.id}&github_link=${githubLink}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
 
-      toast.success("Task submitted!");
+      toast.success("✅ Task submitted!");
       setShowSubmit(false);
 
     } catch {
-      toast.error("Submission failed");
+      toast.error("❌ Submission failed");
     }
   };
 
@@ -167,19 +175,28 @@ const TaskCard = ({ task, role }) => {
       <div className="card-header">
         <div>
           <h3 className="task-title">{task.title}</h3>
-          <span className={`status-badge ${task.status === "DONE" ? "badge-green" : "badge-yellow"}`}>
+
+          <span
+            className={`status-badge ${
+              task.status === "DONE" ? "badge-green" : "badge-yellow"
+            }`}
+          >
             {task.status}
           </span>
         </div>
 
         {task.status === "DONE"
           ? <CheckCircle className="icon-green"/>
-          : <Clock className="icon-yellow"/>}
+          : <Clock className="icon-yellow"/>
+        }
       </div>
 
-      <p className="task-desc">{task.description}</p>
+      <p className="task-desc">
+        {task.description}
+      </p>
 
       <div className="card-footer">
+
         <span className="deadline">
           Deadline: {new Date(task.deadline).toLocaleDateString()}
         </span>
@@ -196,22 +213,27 @@ const TaskCard = ({ task, role }) => {
 
       {showSubmit && (
         <div className="submission-box">
+
           <input
             className="small-input"
             placeholder="GitHub Link"
-            onChange={(e) => setGithubLink(e.target.value)}
+            onChange={e => setGithubLink(e.target.value)}
           />
 
-          <button className="btn-success" onClick={handleSubmit}>
+          <button
+            className="btn-success"
+            onClick={handleSubmit}
+          >
             Confirm Submission
           </button>
+
         </div>
       )}
     </div>
   );
 };
 
-/* ================= DASHBOARD ================= */
+/*  DASHBOARD  */
 
 const Dashboard = ({ setIsAuthenticated }) => {
 
@@ -228,17 +250,27 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
+
   const role = decoded?.role || "ROLE_USER";
 
+  /* LOAD TASKS */
+
   const fetchTasks = async () => {
+
     try {
       const { data } = await axios.get(
         `${API_URL}/api/tasks`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
+
       setTasks(data);
+
     } catch {
-      toast.error("Session expired");
+      toast.error("⚠️ Session expired");
       handleLogout();
     }
   };
@@ -253,36 +285,61 @@ const Dashboard = ({ setIsAuthenticated }) => {
     navigate("/");
   };
 
+  /* CREATE TASK */
+
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
     try {
+
+      const payload = {
+        taskTitle: taskForm.title,
+        taskDescription: taskForm.description,
+        dueDate: taskForm.deadline
+      };
+
       await axios.post(
         `${API_URL}/api/tasks`,
-        taskForm,
-        { headers: { Authorization: `Bearer ${token}` } }
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        }
       );
 
-      toast.success("Task created successfully!");
+      toast.success("✅ Task created!");
+
       setShowModal(false);
-      setTaskForm({ title: "", description: "", deadline: "" });
+
+      setTaskForm({
+        title: "",
+        description: "",
+        deadline: ""
+      });
+
       fetchTasks();
 
-    } catch {
-      toast.error("Failed to create task");
+    } catch (error) {
+      console.error(error);
+      toast.error("❌ Failed to create task");
     }
   };
 
   return (
     <div className="dashboard-container">
 
-      {/* NAVBAR */}
+      {/* NAV */}
+
       <nav className="navbar">
+
         <div className="logo">
           <Lock size={22}/> TaskFlow
         </div>
 
         <div className="nav-right">
+
           <div className="user-info">
             <User size={18}/>
             <span>{role === "ROLE_ADMIN" ? "Admin" : "User"}</span>
@@ -291,18 +348,19 @@ const Dashboard = ({ setIsAuthenticated }) => {
           <button className="btn-logout" onClick={handleLogout}>
             <LogOut size={18}/>
           </button>
+
         </div>
       </nav>
 
       {/* CONTENT */}
+
       <div className="content-wrapper">
 
         <div className="content-header">
+
           <div>
             <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">
-              Manage your tasks efficiently
-            </p>
+            <p className="page-subtitle">Manage your tasks efficiently</p>
           </div>
 
           {role === "ROLE_ADMIN" && (
@@ -333,11 +391,14 @@ const Dashboard = ({ setIsAuthenticated }) => {
             </p>
           </div>
         )}
-
       </div>
 
+      {/* MODAL */}
+
       {showModal && (
+
         <div className="modal-overlay">
+
           <div className="modal-box">
 
             <h2 className="modal-title">
@@ -345,16 +406,16 @@ const Dashboard = ({ setIsAuthenticated }) => {
             </h2>
 
             <form
-              className="modal-form"
               onSubmit={handleCreateTask}
+              className="modal-form"
             >
 
               <input
                 className="input-field"
                 placeholder="Task Title"
-                required
                 value={taskForm.title}
-                onChange={e =>
+                required
+                onChange={(e) =>
                   setTaskForm({ ...taskForm, title: e.target.value })
                 }
               />
@@ -362,9 +423,9 @@ const Dashboard = ({ setIsAuthenticated }) => {
               <textarea
                 className="input-field textarea"
                 placeholder="Task Description"
-                required
                 value={taskForm.description}
-                onChange={e =>
+                required
+                onChange={(e) =>
                   setTaskForm({ ...taskForm, description: e.target.value })
                 }
               />
@@ -372,14 +433,15 @@ const Dashboard = ({ setIsAuthenticated }) => {
               <input
                 type="date"
                 className="input-field"
-                required
                 value={taskForm.deadline}
-                onChange={e =>
+                required
+                onChange={(e) =>
                   setTaskForm({ ...taskForm, deadline: e.target.value })
                 }
               />
 
               <div className="modal-actions">
+
                 <button
                   type="button"
                   className="btn-secondary"
@@ -388,16 +450,16 @@ const Dashboard = ({ setIsAuthenticated }) => {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                >
+                <button type="submit" className="btn-primary">
                   Create Task
                 </button>
+
               </div>
 
             </form>
+
           </div>
+
         </div>
       )}
 
@@ -405,19 +467,20 @@ const Dashboard = ({ setIsAuthenticated }) => {
   );
 };
 
-/* ================= MAIN APP ================= */
+/* MAIN APP */
 
 function App() {
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    setIsAuthenticated(!!localStorage.getItem("token"));
   }, []);
 
   return (
     <Router>
-      <ToastContainer position="top-right" />
+
+      <ToastContainer position="top-right"/>
 
       <Routes>
 
@@ -440,6 +503,7 @@ function App() {
         />
 
       </Routes>
+
     </Router>
   );
 }

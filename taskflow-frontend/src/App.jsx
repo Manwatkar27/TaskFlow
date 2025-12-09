@@ -1,5 +1,3 @@
-// ✅ FINAL WORKING App.jsx
-
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
@@ -43,7 +41,6 @@ const Auth = ({ setIsAuthenticated }) => {
     try {
 
       const endpoint = isLogin ? "/auth/signin" : "/auth/signup";
-
       const { data } = await axios.post(API_URL + endpoint, formData);
 
       if (isLogin) {
@@ -52,7 +49,6 @@ const Auth = ({ setIsAuthenticated }) => {
         setIsAuthenticated(true);
         navigate("/dashboard");
       }
-
       else {
         toast.success("Registration successful!");
         setIsLogin(true);
@@ -134,9 +130,20 @@ const TaskCard = ({ task }) => {
 
       <p className="task-desc">{task.description}</p>
 
-      <span className="deadline">
-        Deadline: {new Date(task.deadline).toLocaleDateString()}
-      </span>
+      {/* ✅ FOOTER WITH SUBMIT BUTTON RESTORED */}
+      <div className="task-footer">
+
+        <span className="deadline">
+          Deadline: {new Date(task.deadline).toLocaleDateString()}
+        </span>
+
+        {task.status !== "DONE" && (
+          <button className="submit-btn">
+            Submit Work
+          </button>
+        )}
+
+      </div>
 
     </div>
   );
@@ -158,7 +165,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
   });
 
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
   const decoded = token ? jwtDecode(token) : null;
 
@@ -184,7 +190,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
   };
 
 
-  /* ✅ FIXED CREATE TASK */
   const handleCreateTask = async (e) => {
 
     e.preventDefault();
@@ -210,21 +215,16 @@ const Dashboard = ({ setIsAuthenticated }) => {
       );
 
       toast.success("Task created!");
-
       setShowModal(false);
       setTaskForm({ title: "", description: "", deadline: "" });
-
       fetchTasks();
 
     } catch (err) {
-
       console.error("CREATE TASK ERROR:", err.response?.data || err);
       toast.error("Failed to create task");
-
     }
 
   };
-
 
 
   return (
@@ -269,11 +269,9 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
         </div>
 
-
         <div className="task-grid">
           {tasks.map(task => <TaskCard key={task.id} task={task} />)}
         </div>
-
 
       </div>
 
@@ -318,7 +316,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
           </div>
 
         </div>
-
       )}
 
     </div>
@@ -336,7 +333,6 @@ function App() {
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem("token"));
   }, []);
-
 
   return (
 

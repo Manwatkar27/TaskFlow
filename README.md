@@ -12,7 +12,7 @@ This is the single entry point to access the full system.
 
 ## 🚀 Key Features
 
-### Microservices Architecture: Decomposed into 5 independent, loosely coupled services for scalability and fault tolerance.
+#### Microservices Architecture: Decomposed into 5 independent, loosely coupled services for scalability and fault tolerance.
 
 ### Centralized Routing: Uses Spring Cloud Gateway as a single entry point for all client requests.
 

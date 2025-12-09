@@ -12,23 +12,23 @@ This is the single entry point to access the full system.
 
 ## 🚀 Key Features
 
-Microservices Architecture: Decomposed into 5 independent, loosely coupled services for scalability and fault tolerance.
+### Microservices Architecture: Decomposed into 5 independent, loosely coupled services for scalability and fault tolerance.
 
-Centralized Routing: Uses Spring Cloud Gateway as a single entry point for all client requests.
+### Centralized Routing: Uses Spring Cloud Gateway as a single entry point for all client requests.
 
-Service Discovery: Integrated with Netflix Eureka for dynamic service registration and load balancing.
+### Service Discovery: Integrated with Netflix Eureka for dynamic service registration and load balancing.
 
-Secure Authentication: Implements JWT (JSON Web Tokens) with BCrypt password hashing for stateless, secure user sessions.
+### Secure Authentication: Implements JWT (JSON Web Tokens) with BCrypt password hashing for stateless, secure user sessions.
 
-Role-Based Access Control (RBAC):
+### Role-Based Access Control (RBAC):
 
-ADMIN: Can create, update, delete, and assign tasks.
+### ADMIN: Can create, update, delete, and assign tasks.
 
-USER: Can view assigned tasks and submit GitHub links for review.
+### USER: Can view assigned tasks and submit GitHub links for review.
 
-Inter-Service Communication: Uses OpenFeign for seamless, declarative REST client communication between services.
+### Inter-Service Communication: Uses OpenFeign for seamless, declarative REST client communication between services.
 
-Modern Frontend: A responsive, user-friendly interface built with React.js and Vite, deployed on Vercel.
+### Modern Frontend: A responsive, user-friendly interface built with React.js and Vite, deployed on Vercel.
 
 ## 🏗️ System Architecture
 
@@ -82,7 +82,7 @@ Gateway routing performance.
 
 Inter-service Feign communication reliability.
 
-Results:
+### Results:
 
 ✅ All services remained stable.
 
@@ -94,7 +94,7 @@ Results:
 
 ## 🛠️ Tech Stack
 
-Backend
+### Backend
 
 Language: Java 17
 
@@ -108,7 +108,7 @@ Security: Spring Security, JWT, BCrypt
 
 Build Tool: Maven
 
-Frontend
+### Frontend
 
 Library: React.js 18
 

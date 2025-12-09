@@ -3,7 +3,6 @@ package in.aman.tasks.taskSecurityConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,9 +24,6 @@ import java.util.List;
 @Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
-    @Value("${jwt.secret:}")
-    private String secret;
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -36,23 +32,24 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
         String jwtHeader = request.getHeader("Authorization");
 
-        System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
-        System.out.println("JWT SECRET IN VALIDATOR = " + secret);
+        // ✅ Get secret DIRECTLY from OS ENV (Render safe)
+        String secret = System.getenv("JWT_SECRET");
 
-        //  Allow public requests to continue
+        // Fallback for local dev
+        if (secret == null || secret.isBlank()) {
+            secret = "local_jwt_secret_123";
+        }
+
+        System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
+        System.out.println("JWT SECRET USED = " + secret);
+
         if (jwtHeader == null || !jwtHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        //  Prevent 500 crash if env accidentally not injected
-        if (secret == null || secret.isBlank()) {
-            System.out.println("WARNING : JWT_SECRET is NULL. Skipping token validation.");
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
+
             String jwt = jwtHeader.substring(7);
 
             Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -66,10 +63,6 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             String email = claims.get("email", String.class);
             String authorities = claims.get("authorities", String.class);
 
-            if (authorities == null) {
-                authorities = "";
-            }
-
             List<GrantedAuthority> authList =
                     AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
 
@@ -79,9 +72,6 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception e) {
-
-            System.out.println("JWT VALIDATION FAILED : " + e.getMessage());
-
             throw new BadCredentialsException("Invalid JWT token", e);
         }
 

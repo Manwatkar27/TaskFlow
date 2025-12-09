@@ -39,13 +39,13 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         System.out.println("JWT HEADER RECEIVED = " + jwtHeader);
         System.out.println("JWT SECRET IN VALIDATOR = " + secret);
 
-        // ✅ Allow public requests to continue
+        //  Allow public requests to continue
         if (jwtHeader == null || !jwtHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // ✅ Prevent 500 crash if env accidentally not injected
+        //  Prevent 500 crash if env accidentally not injected
         if (secret == null || secret.isBlank()) {
             System.out.println("WARNING : JWT_SECRET is NULL. Skipping token validation.");
             filterChain.doFilter(request, response);
@@ -83,7 +83,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             System.out.println("JWT VALIDATION FAILED : " + e.getMessage());
 
             throw new BadCredentialsException("Invalid JWT token", e);
-        }     
+        }
 
         filterChain.doFilter(request, response);
     }
